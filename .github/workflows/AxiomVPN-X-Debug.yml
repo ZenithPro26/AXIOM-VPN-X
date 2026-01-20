@@ -1,4 +1,4 @@
-name: 💠 AXIOM-VPN-X DEBUG BUILD (Self-Healing)
+name: 💠 AXIOM-VPN-X DEBUG BUILD (Full Genesis)
 
 on:
   workflow_dispatch:
@@ -27,12 +27,12 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      # 4. 🧠 CONSTRUCCIÓN UI BLINDADA (AUTO-GÉNESIS)
+      # 4. 🧠 CONSTRUCCIÓN UI BLINDADA (AUTO-GÉNESIS TOTAL)
       - name: 🧠 Build React UI & Inject Assets
         run: |
           echo ">>> 🛡️ PROTOCOLO DE AUTO-GÉNESIS DE ARCHIVOS..."
           
-          # 1. RECREAR package.json (Si falta)
+          # A. RECREAR package.json (Si falta)
           if [ ! -f "package.json" ]; then
             echo ">>> Generando package.json..."
             cat <<EOF > package.json
@@ -41,11 +41,7 @@ jobs:
             "private": true,
             "version": "2.5.0",
             "type": "module",
-            "scripts": {
-              "dev": "vite",
-              "build": "vite build",
-              "preview": "vite preview"
-            },
+            "scripts": { "build": "vite build" },
             "dependencies": {
               "react": "^18.2.0",
               "react-dom": "^18.2.0",
@@ -64,7 +60,7 @@ jobs:
           EOF
           fi
 
-          # 2. RECREAR vite.config.ts (Si falta)
+          # B. RECREAR vite.config.ts (Si falta)
           if [ ! -f "vite.config.ts" ]; then
             echo ">>> Generando vite.config.ts..."
             cat <<EOF > vite.config.ts
@@ -84,16 +80,83 @@ jobs:
             build: {
               outDir: 'dist',
               assetsDir: 'assets',
-              emptyOutDir: true,
-              rollupOptions: {
-                output: {
-                  manualChunks: {
-                    vendor: ['react', 'react-dom', 'recharts'],
-                  },
-                },
-              },
+              emptyOutDir: true
             }
           });
+          EOF
+          fi
+
+          # C. RECREAR index.html (EL ERROR QUE TE DIO)
+          if [ ! -f "index.html" ]; then
+            echo ">>> Generando index.html..."
+            cat <<EOF > index.html
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>AXIOM-LINK</title>
+              <script src="https://cdn.tailwindcss.com"></script>
+              <style>body { background-color: #050505; color: #e5e5e5; }</style>
+            </head>
+            <body>
+              <div id="root"></div>
+              <script type="module" src="/index.tsx"></script>
+            </body>
+          </html>
+          EOF
+          fi
+
+          # D. RECREAR index.tsx (Punto de entrada)
+          if [ ! -f "index.tsx" ]; then
+            echo ">>> Generando index.tsx..."
+            cat <<EOF > index.tsx
+          import React from 'react';
+          import ReactDOM from 'react-dom/client';
+          import App from './App';
+          ReactDOM.createRoot(document.getElementById('root')!).render(
+            <React.StrictMode><App /></React.StrictMode>
+          );
+          EOF
+          fi
+
+          # E. RECREAR App.tsx (Interfaz Básica Cyber-Dark de Respaldo)
+          if [ ! -f "App.tsx" ]; then
+            echo ">>> Generando App.tsx (Backup UI)..."
+            cat <<EOF > App.tsx
+          import React, { useState } from 'react';
+          import { Shield, Zap } from 'lucide-react';
+
+          export default function App() {
+            const [active, setActive] = useState(false);
+            
+            const toggle = () => {
+               if(window.AxiomCore) {
+                 if(!active) window.AxiomCore.startService();
+                 else window.AxiomCore.stopService();
+               }
+               setActive(!active);
+            }
+
+            return (
+              <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#050505] text-white font-mono">
+                <div className="mb-8 p-4 border border-[#1f538d] rounded-lg bg-[#0a0a0a]">
+                  <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <Shield className="text-[#1f538d]" /> AXIOM-LINK
+                  </h1>
+                  <p className="text-xs text-gray-500 mt-2">SECURE TUNNELING PROTOCOL</p>
+                </div>
+                
+                <button 
+                  onClick={toggle}
+                  className={\`w-48 h-48 rounded-full border-4 flex flex-col items-center justify-center transition-all duration-500 \${active ? 'border-[#00ff9d] shadow-[0_0_30px_#00ff9d]' : 'border-[#1f1f1f]'}\`}
+                >
+                  <Zap size={64} className={active ? 'text-[#00ff9d]' : 'text-gray-600'} />
+                  <span className="mt-4 font-bold">{active ? 'ONLINE' : 'OFFLINE'}</span>
+                </button>
+              </div>
+            );
+          }
           EOF
           fi
 
@@ -113,8 +176,8 @@ jobs:
             cp -r dist/* app/src/main/assets/
             echo "✅ UI Inyectada."
           else
-            echo "⚠️ ERROR CRÍTICO: React build falló. Usando Fallback."
-            echo "<html><body style='background:#000;color:red'><h1>UI BUILD ERROR</h1></body></html>" > app/src/main/assets/index.html
+            echo "⚠️ ERROR CRÍTICO: React build falló."
+            exit 1
           fi
 
       # 5. 🐘 REPARACIÓN AUTOMÁTICA DE GRADLE WRAPPER
@@ -151,7 +214,6 @@ jobs:
           </resources>
           EOF
           
-          # Iconos Dummy para que no falle
           cat <<EOF > app/src/main/res/drawable/ic_launcher.xml
           <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#1f538d" android:pathData="M0,0h108v108h-108z"/></vector>
           EOF
