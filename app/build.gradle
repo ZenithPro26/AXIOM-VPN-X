@@ -1,0 +1,82 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace = 'com.axiom.vpn' // Nuevo Namespace
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.axiom.vpn"
+        minSdk = 26
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0.0-Xray-Core"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Soporte para arquitecturas nativas (Xray es código Go compilado a C++)
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable = true
+            minifyEnabled = false
+        }
+        release {
+            minifyEnabled = true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+    
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
+    
+    sourceSets {
+        main {
+            assets.srcDirs += ['src/main/assets']
+        }
+    }
+    
+    // Evita conflictos con archivos duplicados en librerías nativas
+    packagingOptions {
+        pickFirst 'lib/x86/libc++_shared.so'
+        pickFirst 'lib/x86_64/libc++_shared.so'
+        pickFirst 'lib/armeabi-v7a/libc++_shared.so'
+        pickFirst 'lib/arm64-v8a/libc++_shared.so'
+    }
+}
+
+dependencies {
+    // Android Core
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.webkit:webkit:1.9.0'
+    
+    // AXIOM CORE (Tethering Logic)
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    
+    // ☢️ XRAY CORE (El Motor VPN) ☢️
+    // Usamos esta librería wrapper que facilita el uso de Xray en Android
+    implementation 'com.github.2dust:AndroidLibXrayLite:1.0.0' 
+    // Nota: Si esta versión da problemas, probaremos con libv2ray
+    
+    // Gson para parsear la configuración JSON de Xray
+    implementation 'com.google.code.gson:gson:2.10.1'
+}
