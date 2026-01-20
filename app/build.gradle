@@ -1,9 +1,10 @@
 plugins {
     id 'com.android.application'
+    // 🛑 ELIMINADO: id 'org.jetbrains.kotlin.android' (Causa conflicto en AGP 9.0)
 }
 
 android {
-    namespace = 'com.axiom.vpn' // Nuevo Namespace
+    namespace = 'com.axiom.vpn' // ✅ Sintaxis correcta con =
     compileSdk = 34
 
     defaultConfig {
@@ -15,8 +16,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
-        // Soporte para arquitecturas nativas (Xray es código Go compilado a C++)
         ndk {
+            // Arquitecturas para Xray (Go compila a nativo)
             abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
         }
     }
@@ -37,22 +38,13 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = '17'
-    }
-    
-    buildFeatures {
-        buildConfig = true
-        viewBinding = true
-    }
-    
+    // Configuración de Assets para la UI React
     sourceSets {
         main {
             assets.srcDirs += ['src/main/assets']
         }
     }
     
-    // Evita conflictos con archivos duplicados en librerías nativas
     packagingOptions {
         pickFirst 'lib/x86/libc++_shared.so'
         pickFirst 'lib/x86_64/libc++_shared.so'
@@ -62,20 +54,20 @@ android {
 }
 
 dependencies {
-    // Android Core
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.webkit:webkit:1.9.0'
     
-    // AXIOM CORE (Tethering Logic)
+    // XRAY & TOOLS
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
-    
-    // ☢️ XRAY CORE (El Motor VPN) ☢️
-    // Usamos esta librería wrapper que facilita el uso de Xray en Android
-    implementation 'com.github.2dust:AndroidLibXrayLite:1.0.0' 
-    // Nota: Si esta versión da problemas, probaremos con libv2ray
-    
-    // Gson para parsear la configuración JSON de Xray
+    implementation 'com.github.2dust:AndroidLibXrayLite:1.0.0'
     implementation 'com.google.code.gson:gson:2.10.1'
+}
+
+// ✅ CONFIGURACIÓN SEGURA DE KOTLIN (Fuera del bloque android)
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 }
