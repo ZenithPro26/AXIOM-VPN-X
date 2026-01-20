@@ -1,22 +1,18 @@
-name: 💠 AXIOM-VPN-X DEBUG BUILD (Auto-Fix)
+name: 💠 AXIOM-VPN-X DEBUG BUILD (Self-Healing)
 
 on:
-  workflow_dispatch: # Activación manual con botón
+  workflow_dispatch:
 
 jobs:
   build-axiom-vpn:
     runs-on: ubuntu-latest
     
     steps:
-      # ------------------------------------------------------------
-      # 1. 🛰️ OBTENER CÓDIGO
-      # ------------------------------------------------------------
+      # 1. CLONAR REPO
       - name: 🛰️ Checkout Repository
         uses: actions/checkout@v4
 
-      # ------------------------------------------------------------
-      # 2. ☕ PREPARAR ENTORNO (JAVA 21 OBLIGATORIO PARA AGP 9.0)
-      # ------------------------------------------------------------
+      # 2. JAVA 21 (Requerido)
       - name: ☕ Setup Java 21
         uses: actions/setup-java@v4
         with:
@@ -24,50 +20,107 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
-      # ------------------------------------------------------------
-      # 3. ⚛️ PREPARAR NODE.JS
-      # ------------------------------------------------------------
+      # 3. NODE.JS
       - name: ⚛️ Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      # ------------------------------------------------------------
-      # 4. 🧠 CONSTRUIR UI (REACT) + INYECCIÓN
-      # ------------------------------------------------------------
+      # 4. 🧠 CONSTRUCCIÓN UI BLINDADA (AUTO-GÉNESIS)
       - name: 🧠 Build React UI & Inject Assets
         run: |
+          echo ">>> 🛡️ PROTOCOLO DE AUTO-GÉNESIS DE ARCHIVOS..."
+          
+          # 1. RECREAR package.json (Si falta)
+          if [ ! -f "package.json" ]; then
+            echo ">>> Generando package.json..."
+            cat <<EOF > package.json
+          {
+            "name": "axiom-vpn-ui",
+            "private": true,
+            "version": "2.5.0",
+            "type": "module",
+            "scripts": {
+              "dev": "vite",
+              "build": "vite build",
+              "preview": "vite preview"
+            },
+            "dependencies": {
+              "react": "^18.2.0",
+              "react-dom": "^18.2.0",
+              "lucide-react": "^0.344.0",
+              "recharts": "^2.12.0",
+              "react-is": "^18.2.0"
+            },
+            "devDependencies": {
+              "@types/react": "^18.2.66",
+              "@types/react-dom": "^18.2.22",
+              "@vitejs/plugin-react": "^4.2.1",
+              "typescript": "^5.2.2",
+              "vite": "^5.2.0"
+            }
+          }
+          EOF
+          fi
+
+          # 2. RECREAR vite.config.ts (Si falta)
+          if [ ! -f "vite.config.ts" ]; then
+            echo ">>> Generando vite.config.ts..."
+            cat <<EOF > vite.config.ts
+          import path from 'path';
+          import { defineConfig } from 'vite';
+          import react from '@vitejs/plugin-react';
+
+          export default defineConfig({
+            base: './',
+            plugins: [react()],
+            resolve: {
+              alias: {
+                '@': path.resolve(__dirname, '.'),
+                'react-is': path.resolve(__dirname, 'node_modules/react-is')
+              }
+            },
+            build: {
+              outDir: 'dist',
+              assetsDir: 'assets',
+              emptyOutDir: true,
+              rollupOptions: {
+                output: {
+                  manualChunks: {
+                    vendor: ['react', 'react-dom', 'recharts'],
+                  },
+                },
+              },
+            }
+          });
+          EOF
+          fi
+
+          # 3. INSTALACIÓN Y BUILD
           echo ">>> Instalando dependencias..."
           npm install --legacy-peer-deps
           
-          echo ">>> Construyendo Frontend (Vite)..."
-          # Esto generará la carpeta 'dist'
+          echo ">>> Compilando React..."
           npm run build
           
-          echo ">>> Limpiando e Inyectando Assets..."
-          # Borramos assets antiguos para asegurar limpieza
+          # 4. INYECCIÓN
+          echo ">>> Inyectando en Android Assets..."
           rm -rf app/src/main/assets
           mkdir -p app/src/main/assets
           
           if [ -d "dist" ]; then
-            # Copiamos todo el contenido de dist a assets
             cp -r dist/* app/src/main/assets/
-            echo "✅ UI Inyectada: $(ls app/src/main/assets/ | wc -l) archivos."
+            echo "✅ UI Inyectada."
           else
-            echo "⚠️ ERROR: Falló build de React. Creando fallback de emergencia..."
-            echo "<html><body style='background:#050505;color:#1f538d;display:flex;justify-content:center;align-items:center;height:100vh;font-family:monospace;'><h1>AXIOM VPN CORE ACTIVE<br><small>UI Build Failed</small></h1></body></html>" > app/src/main/assets/index.html
+            echo "⚠️ ERROR CRÍTICO: React build falló. Usando Fallback."
+            echo "<html><body style='background:#000;color:red'><h1>UI BUILD ERROR</h1></body></html>" > app/src/main/assets/index.html
           fi
 
-      # ------------------------------------------------------------
       # 5. 🐘 REPARACIÓN AUTOMÁTICA DE GRADLE WRAPPER
-      # ------------------------------------------------------------
       - name: 🐘 Fix Missing Gradle Wrapper
         run: |
-          echo ">>> Verificando integridad del Wrapper..."
           mkdir -p gradle/wrapper
-          
-          # 1. Crear gradle-wrapper.properties apuntando a Gradle 9.3
           cat > gradle/wrapper/gradle-wrapper.properties <<EOF
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
@@ -77,61 +130,45 @@ jobs:
           zipStorePath=wrapper/dists
           EOF
           
-          # 2. Descargar el JAR si no existe (CRÍTICO)
           if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-            echo ">>> Descargando gradle-wrapper.jar faltante..."
             wget -q https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar -O gradle/wrapper/gradle-wrapper.jar
           fi
-          
-          echo "✅ Wrapper reparado."
 
-      # ------------------------------------------------------------
-      # 6. 🎨 GENERACIÓN DE RECURSOS (ICONOS Y TEMAS)
-      # ------------------------------------------------------------
-      - name: 🎨 Generate Resources (Self-Healing)
+      # 6. 🎨 GENERACIÓN DE RECURSOS
+      - name: 🎨 Generate Resources
         run: |
-          echo ">>> Generando estructura de recursos..."
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/drawable
           
-          # Strings
           echo '<resources><string name="app_name">Axiom VPN X</string></resources>' > app/src/main/res/values/strings.xml
           
-          # Tema (Sin ActionBar para pantalla completa)
           cat <<EOF > app/src/main/res/values/themes.xml
           <resources>
-              <style name="Theme.AppCompat.NoActionBar" parent="android:Theme.Material.NoActionBar.Fullscreen">
+              <style name="Theme.AxiomLink" parent="android:Theme.Material.NoActionBar.Fullscreen">
                   <item name="android:statusBarColor">#050505</item>
                   <item name="android:navigationBarColor">#050505</item>
               </style>
           </resources>
           EOF
           
-          # Icono Launcher (Escudo AXIOM)
+          # Iconos Dummy para que no falle
           cat <<EOF > app/src/main/res/drawable/ic_launcher.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-              <path android:fillColor="#050505" android:pathData="M0,0h108v108h-108z"/>
-              <path android:fillColor="#1f538d" android:pathData="M54,14L24,26V56C24,77 38,96 54,104C70,96 84,77 84,56V26L54,14Z"/>
-          </vector>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#1f538d" android:pathData="M0,0h108v108h-108z"/></vector>
           EOF
-          
-          # Icono Notificación
-          cat <<EOF > app/src/main/res/drawable/ic_notification.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-              <path android:fillColor="#FFFFFF" android:pathData="M12,2L4,5V10C4,15.25 7.5,20.1 12,22C16.5,20.1 20,15.25 20,10V5L12,2Z"/>
-          </vector>
-          EOF
-          
           cp app/src/main/res/drawable/ic_launcher.xml app/src/main/res/drawable/ic_launcher_round.xml
+          cp app/src/main/res/drawable/ic_launcher.xml app/src/main/res/drawable/ic_notification.xml
 
-      # ------------------------------------------------------------
-      # 7. 🔧 PERMISOS DE EJECUCIÓN
-      # ------------------------------------------------------------
+      # 7. 🔧 PERMISOS
       - name: 🔧 Grant Permissions
         run: chmod +x gradlew
 
-      # ------------------------------------------------------------
-      # 8. 🔨 COMPILAR APK (MODO DEBUG)
-      # ------------------------------------------------------------
+      # 8. 🔨 COMPILAR
       - name: 🔨 Build Debug APK
         run: ./gradlew assembleDebug --stacktrace --warning-mode=all
+
+      # 9. 📥 SUBIR
+      - name: 📥 Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AxiomVPN-X-Debug
+          path: app/build/outputs/apk/debug/*.apk
